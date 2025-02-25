@@ -1,115 +1,121 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
-    public Camera playerCamera;
-    public float walkSpeed = 6f;
-    public float runSpeed = 12f;
-    public float jumpPower = 7f;
-    public float gravity = 10f;
-    public float lookSpeed = 2f;
-    public float lookXLimit = 45f;
-    public float defaultHeight = 2f;
-    public float crouchHeight = 1f;
-    public float crouchSpeed = 3f;
-    public float cameraDistance = 5f; // Distance of camera from player
-    public float minVerticalAngle = -30f;
-    public float maxVerticalAngle = 60f;
-    public float cameraHeight = 4.5f; // Height offset for camera
-    public float cameraSmoothness = 1f; // For smooth camera movement
+    [Header("Movement Settings")]
+    public float moveSpeed = 5f;
+    public float rotationSpeed = 10f;
+    public float jumpForce = 5f;
+    private bool isGrounded;
 
-    private Vector3 moveDirection = Vector3.zero;
-    private float rotationX = 0;
-    private float rotationY = 0;
-    private CharacterController characterController;
-    private bool canMove = true;
-    private Vector3 cameraVelocity = Vector3.zero;
+    [Header("Camera Settings")] 
+    public Transform cameraTarget;
+    public float cameraSmoothSpeed = 5f;
+    public Vector3 cameraOffset = new Vector3(0, 7, -10);
+    public float mouseSensitivity = 2f;
+    public float minCameraDistance = 15f; // Minimum distance between camera and player
+    private Camera mainCamera;
+    private float horizontalRotation = 0f;
 
     void Start()
     {
-        characterController = GetComponent<CharacterController>();
+        mainCamera = Camera.main;
+
+        // Lock and hide cursor
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        
-        // Initialize camera position
-        UpdateCameraPosition();
+
+        if (cameraTarget == null)
+        {
+            // Create camera target if not assigned
+            GameObject target = new GameObject("CameraTarget");
+            cameraTarget = target.transform;
+            cameraTarget.parent = transform;
+            cameraTarget.localPosition = Vector3.zero;
+        }
     }
 
     void Update()
     {
-        Vector3 forward = transform.forward;
-        Vector3 right = transform.right;
+        HandleCameraMovement(); // Handle camera first
+        HandleMovement();
+        HandleJump();
+    }
 
-        bool isRunning = Input.GetKey(KeyCode.LeftShift);
-        float curSpeedX = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Vertical") : 0;
-        float curSpeedY = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Horizontal") : 0;
-        float movementDirectionY = moveDirection.y;
-        moveDirection = (forward * curSpeedX) + (right * curSpeedY);
+    void HandleMovement()
+    {
+        // Get keyboard input
+        float horizontal = 0;
+        if (Input.GetKey(KeyCode.A))
+            horizontal = -1;
+        else if (Input.GetKey(KeyCode.D))
+            horizontal = 1;
+        float vertical = Input.GetAxisRaw("Vertical");
 
-        if (Input.GetButton("Jump") && canMove && characterController.isGrounded)
-        {
-            moveDirection.y = jumpPower;
-        }
-        else
-        {
-            moveDirection.y = movementDirectionY;
-        }
+        // Calculate movement direction relative to camera's forward direction
+        Vector3 forward = mainCamera.transform.forward;
+        forward.y = 0; // Keep movement on horizontal plane
+        forward = forward.normalized;
+        
+        Vector3 right = mainCamera.transform.right;
+        right.y = 0; // Keep movement on horizontal plane
+        right = right.normalized;
 
-        if (!characterController.isGrounded)
-        {
-            moveDirection.y -= gravity * Time.deltaTime;
-        }
+        Vector3 moveDirection = (forward * vertical + right * horizontal).normalized;
 
-        if (Input.GetKey(KeyCode.R) && canMove)
+        // Move player without rotating
+        if (moveDirection != Vector3.zero)
         {
-            characterController.height = crouchHeight;
-            walkSpeed = crouchSpeed;
-            runSpeed = crouchSpeed;
-        }
-        else
-        {
-            characterController.height = defaultHeight;
-            walkSpeed = 6f;
-            runSpeed = 12f;
-        }
-
-        characterController.Move(moveDirection * Time.deltaTime);
-
-        if (canMove)
-        {
-            rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
-            rotationY += Input.GetAxis("Mouse X") * lookSpeed;
-            
-            // Clamp the vertical rotation
-            rotationX = Mathf.Clamp(rotationX, minVerticalAngle, maxVerticalAngle);
-            
-            // Rotate the player based on horizontal mouse movement
-            transform.rotation = Quaternion.Euler(0, rotationY, 0);
-            
-            UpdateCameraPosition();
+            // Move player
+            transform.position += moveDirection * moveSpeed * Time.deltaTime;
         }
     }
 
-    private void UpdateCameraPosition()
+    void HandleJump()
     {
-        // Calculate desired camera position
-        Vector3 targetPosition = transform.position;
-        targetPosition -= transform.forward * cameraDistance; // Move camera behind player
-        targetPosition += Vector3.up * cameraHeight; // Add height offset
+        // Simple ground check
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
 
-        // Smoothly move camera to desired position
-        playerCamera.transform.position = Vector3.SmoothDamp(
-            playerCamera.transform.position,
-            targetPosition,
-            ref cameraVelocity,
-            cameraSmoothness
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            Vector3 jumpVector = Vector3.up * jumpForce;
+            transform.position += jumpVector * Time.deltaTime;
+        }
+    }
+
+    void HandleCameraMovement()
+    {
+        // Get mouse input
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+
+        // Update horizontal rotation based on mouse X movement
+        horizontalRotation += mouseX;
+        transform.rotation = Quaternion.Euler(0f, horizontalRotation, 0f);
+
+        // Calculate desired camera position
+        Vector3 desiredPosition = cameraTarget.position + cameraTarget.rotation * cameraOffset;
+
+        // Check for obstacles between camera and target
+        RaycastHit hit;
+        Vector3 directionToCamera = (desiredPosition - cameraTarget.position).normalized;
+        float distanceToTarget = Vector3.Distance(cameraTarget.position, desiredPosition);
+        
+        if (Physics.Raycast(cameraTarget.position, directionToCamera, out hit, distanceToTarget))
+        {
+            // If there's an obstacle, position camera at hit point with minimum distance
+            float adjustedDistance = Mathf.Max(hit.distance - 0.5f, minCameraDistance);
+            desiredPosition = cameraTarget.position + directionToCamera * adjustedDistance;
+        }
+
+        // Smoothly move camera
+        mainCamera.transform.position = Vector3.Lerp(
+            mainCamera.transform.position,
+            desiredPosition,
+            cameraSmoothSpeed * Time.deltaTime
         );
 
-        // Make camera look at player's head level
-        Vector3 lookAtPosition = transform.position + Vector3.up * (characterController.height * 0.8f);
-        playerCamera.transform.LookAt(lookAtPosition);
+        // Make camera look at target
+        mainCamera.transform.LookAt(cameraTarget.position);
     }
 }
