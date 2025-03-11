@@ -5,7 +5,10 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
-    public float jumpForce = 5f;
+    public float jumpForce = 10f;
+    public float gravity = 10f;
+    public float groundCheckDistance = 0.2f; // Pienennetään tätä
+    private float verticalVelocity = 0f;
     private bool isGrounded;
 
     [Header("Camera Settings")] 
@@ -61,26 +64,63 @@ public class PlayerMovement : MonoBehaviour
         right.y = 0; // Keep movement on horizontal plane
         right = right.normalized;
 
-        Vector3 moveDirection = (forward * vertical + right * horizontal).normalized;
+        // Muutetaan tätä riviä - normalisoidaan vain jos vektori ei ole nolla
+        Vector3 moveDirection = forward * vertical + right * horizontal;
+        Debug.Log($"Before normalization: {moveDirection}");
+        if (moveDirection != Vector3.zero)
+        {
+            moveDirection.Normalize();
+            Debug.Log($"After normalization: {moveDirection}");
+        }
 
         // Move player without rotating
         if (moveDirection != Vector3.zero)
         {
-            // Move player
-            transform.position += moveDirection * moveSpeed * Time.deltaTime;
+            // Liiku vain x- ja z-akseleilla
+            Vector3 currentPos = transform.position;
+            Vector3 movement = moveDirection * moveSpeed * Time.deltaTime;
+            transform.position = new Vector3(
+                currentPos.x + movement.x,
+                currentPos.y, // Säilytä nykyinen y-koordinaatti
+                currentPos.z + movement.z
+            );
         }
     }
 
     void HandleJump()
     {
-        // Simple ground check
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
+        // Muutetaan raycastin aloituspistettä ja etäisyyttä
+        RaycastHit hit;
+        Vector3 rayStart = transform.position + Vector3.up * 0.1f; // Pienennetään aloituskorkeutta
+        isGrounded = Physics.Raycast(rayStart, Vector3.down, out hit, groundCheckDistance + 0.1f);
+        
+        // Debug viestit
+        Debug.Log($"IsGrounded: {isGrounded}, VerticalVelocity: {verticalVelocity}, Height: {transform.position.y}");
+        Debug.DrawRay(rayStart, Vector3.down * (groundCheckDistance + 0.1f), Color.red);
 
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        // Apply gravity first
+        verticalVelocity -= gravity * Time.deltaTime;
+
+        if (isGrounded)
         {
-            Vector3 jumpVector = Vector3.up * jumpForce;
-            transform.position += jumpVector * Time.deltaTime;
+            // Kun osumme maahan, asetetaan y-positio tarkasti maahan
+            if (verticalVelocity < 0)
+            {
+                transform.position = new Vector3(transform.position.x, hit.point.y, transform.position.z);
+                verticalVelocity = 0f;
+            }
+
+            // Hyppy vain kun ollaan maassa
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                Debug.Log("Jumping!");
+                verticalVelocity = jumpForce;
+                isGrounded = false; // Estetään välitön uudelleenhyppy
+            }
         }
+
+        // Apply vertical movement
+        transform.position += Vector3.up * verticalVelocity * Time.deltaTime;
     }
 
     void HandleCameraMovement()
