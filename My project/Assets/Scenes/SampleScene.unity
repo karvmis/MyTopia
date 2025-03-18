@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 47417841}
   - component: {fileID: 47417840}
   - component: {fileID: 47417844}
+  - component: {fileID: 47417845}
   m_Layer: 0
   m_Name: Plane
   m_TagString: Untagged
@@ -248,8 +249,28 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 12.013, y: 0.02, z: 4}
-  m_Center: {x: 0, y: 0.01, z: 0}
+  m_Size: {x: 9.999999, y: 2.2204459e-16, z: 9.999999}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!154 &47417845
+TerrainCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 47417839}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_TerrainData: {fileID: 0}
+  m_EnableTreeColliders: 1
 --- !u!1 &105822627
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +466,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 3.5, z: -11}
+  m_LocalPosition: {x: -1.09, y: 6.77, z: -11}
   m_LocalScale: {x: 1.1768, y: 1.1768, z: -6.8880024}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -644,7 +665,7 @@ Transform:
   m_GameObject: {fileID: 643664324}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.73, z: -1.47}
+  m_LocalPosition: {x: 0, y: 5.05, z: -1.47}
   m_LocalScale: {x: 1.0354, y: 1.0354, z: 1.0354}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -667,7 +688,7 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 2
@@ -915,15 +936,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
+  sprintSpeed: 10
   rotationSpeed: 10
   jumpForce: 5
   gravity: 20
   groundCheckDistance: 0.3
+  groundCheckYOffset: 0.1
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  fallDamageThreshold: 5
+  fallDamageMultiplier: 10
   cameraTarget: {fileID: 643664325}
   cameraSmoothSpeed: 5
   cameraOffset: {x: 10, y: 5, z: 0}
   mouseSensitivity: 2
-  minCameraDistance: 5
+  minCameraDistance: 15
 --- !u!143 &1437442421
 CharacterController:
   m_ObjectHideFlags: 0
@@ -958,7 +986,7 @@ Transform:
   m_GameObject: {fileID: 1437442419}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.8030895, y: 0.3066413, z: -2.267292}
+  m_LocalPosition: {x: 0, y: 2.49, z: -2.46}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -983,12 +1011,12 @@ CapsuleCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 1
   m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 5.05, z: -1.47}
 --- !u!1 &1860647367
 GameObject:
   m_ObjectHideFlags: 0
